@@ -56,6 +56,8 @@ void AEndlessRunnerCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	StartPosition = GetActorLocation();
+
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -124,6 +126,22 @@ void AEndlessRunnerCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void AEndlessRunnerCharacter::Dodge(const FInputActionValue& Value)
+{
+}
 
+void AEndlessRunnerCharacter::Tick(float DeltaTime)
+{
+	if (Controller != nullptr)
+	{
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		AddMovementInput(ForwardDirection, MoveSpeed);
+	}
 
-
+	FVector ClampedPosition = GetActorLocation();
+	ClampedPosition.X = StartPosition.X;
+	ClampedPosition.Y = FMath::Clamp(ClampedPosition.Y, StartPosition.Y - YMovementLength, StartPosition.Y + YMovementLength);
+	SetActorLocation(ClampedPosition);
+}
