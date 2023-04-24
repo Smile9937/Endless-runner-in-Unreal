@@ -34,6 +34,11 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UArrowComponent> ForwardVector;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UGameData> GameData;
+
+	TArray<FVector> SpawnPositions;
+
 protected:
 	virtual void BeginPlay() override;
 
