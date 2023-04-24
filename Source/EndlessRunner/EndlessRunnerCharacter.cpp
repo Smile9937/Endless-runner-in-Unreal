@@ -9,6 +9,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Kismet/GameplayStatics.h"
+#include "LaneManager.h"
+#include "GameData.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,8 +50,15 @@ AEndlessRunnerCharacter::AEndlessRunnerCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	FloatCurve = CreateDefaultSubobject<UCurveFloat>("Float Curve");
+	Timeline = CreateDefaultSubobject<UTimelineComponent>("Timeline");
+
+	InterpFunction.BindUFunction(this, FName{ TEXT("TimelineFloatReturn") });
+	TimelineFunction.BindUFunction(this, FName{ TEXT("TimelineFinished") });
+
+	MovePointIndex = 1;
+
+	MovePoints.Init(FVector(0, 0, 0), 3);
 }
 
 void AEndlessRunnerCharacter::BeginPlay()
@@ -58,7 +68,19 @@ void AEndlessRunnerCharacter::BeginPlay()
 
 	StartPosition = GetActorLocation();
 
-	//Add Input Mapping Context
+	CurrentPosition = StartPosition;
+
+	MovePoints[1] = StartPosition;
+
+	MovePoints[0] = StartPosition;
+	MovePoints[0].Y -= GameData->DistanceBetweenLanes;
+
+	MovePoints[2] = StartPosition;
+	MovePoints[2].Y += GameData->DistanceBetweenLanes;
+
+	Timeline->AddInterpFloat(FloatCurve, InterpFunction, FName{ TEXT("Curve Foat") });
+	Timeline->SetTimelineFinishedFunc(TimelineFunction);
+
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -68,80 +90,59 @@ void AEndlessRunnerCharacter::BeginPlay()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
-
 void AEndlessRunnerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		//Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEndlessRunnerCharacter::Move);
-
-		//Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEndlessRunnerCharacter::Look);
-
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Started, this, &AEndlessRunnerCharacter::Move);
 	}
 
+}
+
+void AEndlessRunnerCharacter::TimelineFloatReturn(float value)
+{
+	FVector LerpedPosition = FMath::Lerp(CurrentPosition, NextPosition, value);
+	SetActorLocation(LerpedPosition);
+}
+
+void AEndlessRunnerCharacter::TimelineFinished()
+{
+	WaitingToMove = false;
 }
 
 void AEndlessRunnerCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
 	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		if (!WaitingToMove)
+		{
 
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+			if(MovementVector.X > 0)
+			{
+				if(MovePoints.Num() - 1 > MovePointIndex)
+				{
+					WaitingToMove = true;
+					MovePointIndex++;
+					NextPosition = MovePoints[MovePointIndex];
+					Timeline->PlayFromStart();
+				}
+			}
+			else
+			{
+				if (MovePointIndex - 1 >= 0)
+				{
+					WaitingToMove = true;
+					MovePointIndex--;
+					NextPosition = MovePoints[MovePointIndex];
+					Timeline->PlayFromStart();
+				}
+			}
+		}
 	}
-}
-
-void AEndlessRunnerCharacter::Look(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
-	}
-}
-
-void AEndlessRunnerCharacter::Dodge(const FInputActionValue& Value)
-{
 }
 
 void AEndlessRunnerCharacter::Tick(float DeltaTime)
 {
-	if (Controller != nullptr)
-	{
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(ForwardDirection, MoveSpeed);
-	}
-
-	FVector ClampedPosition = GetActorLocation();
-	ClampedPosition.X = StartPosition.X;
-	ClampedPosition.Y = FMath::Clamp(ClampedPosition.Y, StartPosition.Y - YMovementLength, StartPosition.Y + YMovementLength);
-	SetActorLocation(ClampedPosition);
 }

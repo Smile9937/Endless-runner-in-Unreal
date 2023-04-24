@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Components/TimelineComponent.h"
 #include "EndlessRunnerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -12,6 +13,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 class UInputComponent;
+class ALaneManager;
+class UGameData;
 
 UCLASS(config=Game)
 class AEndlessRunnerCharacter : public ACharacter
@@ -40,22 +43,45 @@ class AEndlessRunnerCharacter : public ACharacter
 	TObjectPtr<UInputAction> DodgeAction;
 
 	FVector StartPosition;
+	FVector ClampedPosition;
+
+	TArray<FVector> MovePoints;
+	int8 MovePointIndex;
+	FVector CurrentPosition;
+	FVector NextPosition;
+
+	bool WaitingToMove;
+
 public:
 	AEndlessRunnerCharacter();
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UGameData> GameData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UCurveFloat> FloatCurve;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Input)
 	float MoveSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Input)
 	float YMovementLength;
 
+	UPROPERTY()
+	TObjectPtr<UTimelineComponent> Timeline;
+
+	FOnTimelineFloat InterpFunction{};
+	FOnTimelineEvent TimelineFunction{};
+
+	UFUNCTION()
+	void TimelineFloatReturn(float value);
+
+	UFUNCTION()
+	void TimelineFinished();
+
 protected:
 
 	void Move(const FInputActionValue& Value);
-
-	void Look(const FInputActionValue& Value);
-
-	void Dodge(const FInputActionValue& Value);
 
 	virtual void Tick(float DeltaTime) override;
 			
