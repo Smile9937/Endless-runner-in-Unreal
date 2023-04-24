@@ -13,4 +13,7 @@ class ENDLESSRUNNER_API UGameData : public UDataAsset
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DespawnXPosition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DistanceBetweenLanes;
 };
