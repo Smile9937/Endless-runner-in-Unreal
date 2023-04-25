@@ -21,8 +21,6 @@ ObstacleSpawner: It spawns obstacles on random lanes during a set interval.
 
 Obstacle: It moves forwards at a set speed.
 
-Talking about class 2 goes here
-
 ## Part 2
 
 Not done yet, write more about this later.
