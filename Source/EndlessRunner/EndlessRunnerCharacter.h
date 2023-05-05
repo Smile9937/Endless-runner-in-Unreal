@@ -24,8 +24,7 @@ class AEndlessRunnerCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true")) 
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UCameraComponent> FollowCamera;
+
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -73,22 +72,33 @@ public:
 	FOnTimelineFloat InterpFunction{};
 	FOnTimelineEvent TimelineFunction{};
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	TObjectPtr<UCameraComponent> FollowCamera;
+
 	UFUNCTION()
 	void TimelineFloatReturn(float value);
 
 	UFUNCTION()
 	void TimelineFinished();
 
+	void Move(const int8 Value);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int MaxHealth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	int CurrentHealth;
+
+	UFUNCTION()
+	void ReduceHealth();
+
 protected:
 
-	void Move(const FInputActionValue& Value);
 
 	virtual void Tick(float DeltaTime) override;
 			
 
 protected:
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	
 	virtual void BeginPlay();
 
 public:

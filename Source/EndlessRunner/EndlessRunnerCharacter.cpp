@@ -13,7 +13,6 @@
 #include "LaneManager.h"
 #include "GameData.h"
 
-
 //////////////////////////////////////////////////////////////////////////
 // AEndlessRunnerCharacter
 
@@ -59,6 +58,8 @@ AEndlessRunnerCharacter::AEndlessRunnerCharacter()
 	MovePointIndex = 1;
 
 	MovePoints.Init(FVector(0, 0, 0), 3);
+
+	MaxHealth = 3;
 }
 
 void AEndlessRunnerCharacter::BeginPlay()
@@ -81,22 +82,7 @@ void AEndlessRunnerCharacter::BeginPlay()
 	Timeline->AddInterpFloat(FloatCurve, InterpFunction, FName{ TEXT("Curve Foat") });
 	Timeline->SetTimelineFinishedFunc(TimelineFunction);
 
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-}
-
-void AEndlessRunnerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
-{
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Started, this, &AEndlessRunnerCharacter::Move);
-	}
-
+	CurrentHealth = MaxHealth;
 }
 
 void AEndlessRunnerCharacter::TimelineFloatReturn(float value)
@@ -110,36 +96,44 @@ void AEndlessRunnerCharacter::TimelineFinished()
 	WaitingToMove = false;
 }
 
-void AEndlessRunnerCharacter::Move(const FInputActionValue& Value)
+void AEndlessRunnerCharacter::Move(const int8 Value)
 {
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
+	if (!WaitingToMove)
 	{
-		if (!WaitingToMove)
-		{
 
-			if(MovementVector.X > 0)
+		if(Value > 0)
+		{
+			if(MovePoints.Num() - 1 > MovePointIndex)
 			{
-				if(MovePoints.Num() - 1 > MovePointIndex)
-				{
-					WaitingToMove = true;
-					MovePointIndex++;
-					NextPosition = MovePoints[MovePointIndex];
-					Timeline->PlayFromStart();
-				}
-			}
-			else
-			{
-				if (MovePointIndex - 1 >= 0)
-				{
-					WaitingToMove = true;
-					MovePointIndex--;
-					NextPosition = MovePoints[MovePointIndex];
-					Timeline->PlayFromStart();
-				}
+				WaitingToMove = true;
+				MovePointIndex++;
+				CurrentPosition = GetActorLocation();
+				NextPosition = MovePoints[MovePointIndex];
+				NextPosition.Z = CurrentPosition.Z;
+				Timeline->PlayFromStart();
 			}
 		}
+		else
+		{
+			if (MovePointIndex - 1 >= 0)
+			{
+				WaitingToMove = true;
+				MovePointIndex--;
+				CurrentPosition = GetActorLocation();
+				NextPosition = MovePoints[MovePointIndex];
+				NextPosition.Z = CurrentPosition.Z;
+				Timeline->PlayFromStart();
+			}
+		}
+	}
+}
+
+void AEndlessRunnerCharacter::ReduceHealth()
+{
+	CurrentHealth--;
+	if (CurrentHealth <= 0)
+	{
+		Destroy();
 	}
 }
 

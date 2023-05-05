@@ -6,6 +6,7 @@
 
 class UGameData;
 class UArrowComponent;
+class UCurveFloat;
 
 UCLASS()
 class ENDLESSRUNNER_API AObstacleSpawner : public AActor
@@ -15,16 +16,16 @@ class ENDLESSRUNNER_API AObstacleSpawner : public AActor
 public:	
 	AObstacleSpawner();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Properties)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnTime;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Properties)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<TSubclassOf<AActor>> ActorsToSpawn;
-
-	int32 SpawnIndex;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> SpawnedActors;
+
+	int32 SpawnIndex;
 
 	UFUNCTION()
 	void OnSpawn();
@@ -37,7 +38,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UGameData> GameData;
 
+	UPROPERTY()
 	TArray<FVector> SpawnPositions;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UCurveFloat> SpawnSpeedCurve;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UCurveFloat> ObstacleSpeedCurve;
+
+	float TimeSinceGameStart;
 
 protected:
 	virtual void BeginPlay() override;

@@ -7,7 +7,7 @@ Find my binary under the shipping version Windows 10 package under Releases tab 
 ## Part 1
 
 Controls:
-Move left/right | reft/right arrow keys or A/D.
+Move left/right | left/right arrow keys or A/D.
 
 The game uses lane based movement with 3 lanes. Obstacles are spawned on the lanes and moves towards the player. The player can move between the 3 lanes to dodge obstacles.
 
@@ -23,4 +23,15 @@ Obstacle: It moves forwards at a set speed.
 
 ## Part 2
 
-Not done yet, write more about this later.
+Controls:
+Quit Game | Escape
+Restart Game | R
+Player 1: Move left/right | left/right arrow keys
+Player 2: Move left/right | A/D
+
+I have added local multiplayer to the game. It is played on the same keyboard.
+
+Both payer characters recieve input in the PlayerManager class. I made it this way since 2 different characters can't take input from the same device in unreal, so I had to make one class that takes the input and then passes them onto the player characters.
+Another problem with making local multplayer was then, since the PlayerManager needs to be a controlled pawn, it is now taking part in the split screen. To solve this issue, I made a PlayerViewport class, and added the first player character to the viewport for the PlayerManager and added the second caracter to the viewport of the PlayerViewport.
+
+I tried to make a scoreboard and managed to figure out how to read/write to json files. But I ran into some issues and couldn't finish it in time.
